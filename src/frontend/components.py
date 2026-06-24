@@ -48,7 +48,7 @@ def render_classification_result(
 
     st.subheader("Classification")
 
-    col1, col2 = st.columns(2)
+    col1, col2, col3 = st.columns(3)
 
     with col1:
         st.metric(
@@ -63,10 +63,16 @@ def render_classification_result(
 
     with col2:
         st.metric(
+            label="Intent",
+            value=result.inquiry.intent.value,
+        )
+
+        st.metric(
             label="Location required",
             value="Yes" if result.inquiry.requires_location else "No",
         )
 
+    with col3:
         st.metric(
             label="Human review required",
             value=(
@@ -76,8 +82,13 @@ def render_classification_result(
             ),
         )
 
+        st.metric(
+            label="Classification source",
+            value=result.source.value,
+        )
+
     if result.source == ClassificationSource.LLM:
-        st.info("Classification source: OpenRouter language model.")
+        st.info("The inquiry was classified by the language model.")
     else:
         st.warning(
             "The language model was unavailable or returned an invalid "
