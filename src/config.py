@@ -18,3 +18,16 @@ def get_openrouter_api_key() -> str:
         )
 
     return api_key
+
+def get_openrouter_model() -> str:
+    """Return the configured OpenRouter model identifier."""
+
+    model = os.getenv("OPENROUTER_MODEL")
+
+    if not model:
+        raise RuntimeError(
+            "OPENROUTER_MODEL is not configured. "
+            "Add it to the local .env file."
+        )
+
+    return model
