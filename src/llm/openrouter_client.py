@@ -98,7 +98,7 @@ def send_chat_message(
         "Authorization": f"Bearer {get_openrouter_api_key()}",
         "Content-Type": "application/json",
         "HTTP-Referer": "https://github.com/",
-        "X-OpenRouter-Title": "Täby Civic Assistant",
+        "X-OpenRouter-Title": "Taby Civic Assistant",
     }
 
     payload: dict[str, Any] = {
