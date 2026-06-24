@@ -44,4 +44,6 @@ if submitted:
 
         st.subheader("Submitted inquiry")
         st.write(inquiry.original_text)
-        
+        st.subheader("Initial case state")
+        st.json(inquiry.model_dump(mode="json"),
+)
