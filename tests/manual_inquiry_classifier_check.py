@@ -15,9 +15,10 @@ def main() -> None:
     result = classify_inquiry_with_llm(inquiry)
 
     print("Classification result:")
-    print(result.model_dump_json(indent=2))
+    print(result.inquiry.model_dump_json(indent=2))
+
+    print(f"Classification source: {result.source}")
 
 
 if __name__ == "__main__":
     main()
-    

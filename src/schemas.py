@@ -13,6 +13,13 @@ class InquiryDomain(StrEnum):
     UNKNOWN = "unknown"
 
 
+class ClassificationSource(StrEnum):
+    """Source used to classify a citizen inquiry."""
+
+    LLM = "llm"
+    DETERMINISTIC_FALLBACK = "deterministic_fallback"
+
+
 class CitizenInquiry(BaseModel):
     """Structured representation of a citizen inquiry."""
 
@@ -34,10 +41,11 @@ class CitizenInquiry(BaseModel):
     )
     requires_human_review: bool = Field(
         default=True,
-        description="Whether the inquiry should be reviewed by a municipal officer.",
+        description=(
+            "Whether the inquiry should be reviewed by a municipal officer."
+        ),
     )
 
-# for avoid that the llm modify the origina message
 
 class InquiryClassification(BaseModel):
     """Validated classification returned by the language model."""
@@ -55,3 +63,11 @@ class InquiryClassification(BaseModel):
     requires_human_review: bool = Field(
         description="Whether the inquiry requires municipal officer review.",
     )
+
+
+class InquiryClassificationResult(BaseModel):
+    """Result returned by the inquiry classification service."""
+
+    inquiry: CitizenInquiry
+    source: ClassificationSource
+    

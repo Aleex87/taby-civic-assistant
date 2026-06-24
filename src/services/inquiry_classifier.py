@@ -8,7 +8,12 @@ from src.llm.openrouter_client import (
     OpenRouterUserFacingError,
     send_chat_message,
 )
-from src.schemas import CitizenInquiry, InquiryClassification
+from src.schemas import (
+    CitizenInquiry,
+    ClassificationSource,
+    InquiryClassification,
+    InquiryClassificationResult,
+)
 from src.triage import classify_inquiry
 
 
@@ -61,7 +66,7 @@ def _parse_classification(content: str) -> InquiryClassification:
 
 def classify_inquiry_with_llm(
     inquiry: CitizenInquiry,
-) -> CitizenInquiry:
+) -> InquiryClassificationResult:
     """Classify an inquiry with OpenRouter and use rules as fallback."""
 
     try:
@@ -76,7 +81,7 @@ def classify_inquiry_with_llm(
 
         classification = _parse_classification(content)
 
-        return inquiry.model_copy(
+        classified_inquiry = inquiry.model_copy(
             update={
                 "language": classification.language,
                 "domain": classification.domain,
@@ -87,11 +92,21 @@ def classify_inquiry_with_llm(
             }
         )
 
+        return InquiryClassificationResult(
+            inquiry=classified_inquiry,
+            source=ClassificationSource.LLM,
+        )
+
     except (
         OpenRouterUserFacingError,
         OpenRouterError,
         RuntimeError,
         ValueError,
     ):
-        return classify_inquiry(inquiry)
+        fallback_inquiry = classify_inquiry(inquiry)
+
+        return InquiryClassificationResult(
+            inquiry=fallback_inquiry,
+            source=ClassificationSource.DETERMINISTIC_FALLBACK,
+        )
     
