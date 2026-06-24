@@ -91,8 +91,10 @@ def _build_user_facing_error(response: httpx.Response) -> OpenRouterUserFacingEr
 def send_chat_message(
     message: str,
     model: str,
+    system_message: str | None = None,
+    response_format: dict[str, Any] | None = None,
 ) -> str:
-    """Send one message to OpenRouter and return the assistant text."""
+    """Send a chat request to OpenRouter and return the assistant text."""
 
     headers = {
         "Authorization": f"Bearer {get_openrouter_api_key()}",
@@ -101,15 +103,30 @@ def send_chat_message(
         "X-OpenRouter-Title": "Taby Civic Assistant",
     }
 
+    messages: list[dict[str, str]] = []
+
+    if system_message:
+        messages.append(
+            {
+                "role": "system",
+                "content": system_message,
+            }
+        )
+
+    messages.append(
+        {
+            "role": "user",
+            "content": message,
+        }
+    )
+
     payload: dict[str, Any] = {
         "model": model,
-        "messages": [
-            {
-                "role": "user",
-                "content": message,
-            }
-        ],
+        "messages": messages,
     }
+
+    if response_format is not None:
+        payload["response_format"] = response_format
 
     try:
         response = httpx.post(

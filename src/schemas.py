@@ -36,3 +36,22 @@ class CitizenInquiry(BaseModel):
         default=True,
         description="Whether the inquiry should be reviewed by a municipal officer.",
     )
+
+# for avoid that the llm modify the origina message
+
+class InquiryClassification(BaseModel):
+    """Validated classification returned by the language model."""
+
+    language: str = Field(
+        min_length=2,
+        description="Detected language code, such as sv, en, or it.",
+    )
+    domain: InquiryDomain = Field(
+        description="High-level municipal domain assigned to the inquiry.",
+    )
+    requires_location: bool = Field(
+        description="Whether an address or geographic location is required.",
+    )
+    requires_human_review: bool = Field(
+        description="Whether the inquiry requires municipal officer review.",
+    )
