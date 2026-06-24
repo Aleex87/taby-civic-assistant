@@ -1,6 +1,7 @@
 import streamlit as st
 from pydantic import ValidationError
 from src.schemas import CitizenInquiry
+from src.triage import classify_inquiry
 
 
 st.set_page_config(
@@ -35,8 +36,9 @@ with st.form("citizen_inquiry_form"):
 if submitted:
     try:
         inquiry = CitizenInquiry(
-            original_text=citizen_inquiry.strip(),
-        )
+        original_text=citizen_inquiry.strip(),
+            )
+        inquiry = classify_inquiry(inquiry)
     except ValidationError:
         st.warning("Please enter a citizen inquiry before continuing.")
     else:
