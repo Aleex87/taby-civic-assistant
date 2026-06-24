@@ -13,6 +13,18 @@ class InquiryDomain(StrEnum):
     UNKNOWN = "unknown"
 
 
+class InquiryIntent(StrEnum):
+    """Supported citizen inquiry intents."""
+
+    GENERAL_INFORMATION = "general_information"
+    PERMISSION_QUESTION = "permission_question"
+    REPORT_POSSIBLE_VIOLATION = "report_possible_violation"
+    REQUEST_CONTACT = "request_contact"
+    CASE_STATUS = "case_status"
+    SUBMIT_COMPLAINT = "submit_complaint"
+    UNKNOWN = "unknown"
+
+
 class ClassificationSource(StrEnum):
     """Source used to classify a citizen inquiry."""
 
@@ -35,6 +47,10 @@ class CitizenInquiry(BaseModel):
         default=InquiryDomain.UNKNOWN,
         description="High-level domain assigned to the inquiry.",
     )
+    intent: InquiryIntent = Field(
+        default=InquiryIntent.UNKNOWN,
+        description="Specific intent expressed by the citizen.",
+    )
     requires_location: bool = Field(
         default=False,
         description="Whether the inquiry requires an address or location.",
@@ -56,6 +72,9 @@ class InquiryClassification(BaseModel):
     )
     domain: InquiryDomain = Field(
         description="High-level municipal domain assigned to the inquiry.",
+    )
+    intent: InquiryIntent = Field(
+        description="Specific intent expressed by the citizen.",
     )
     requires_location: bool = Field(
         description="Whether an address or geographic location is required.",

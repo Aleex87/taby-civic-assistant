@@ -2,6 +2,7 @@ from src.schemas import (
     CitizenInquiry,
     ClassificationSource,
     InquiryDomain,
+    InquiryIntent,
 )
 from src.services import inquiry_classifier
 
@@ -14,10 +15,11 @@ def test_classification_uses_llm_response(
     def fake_send_chat_message(**kwargs) -> str:
         return """
         {
-          "language": "sv",
-          "domain": "neighbour_and_property",
-          "requires_location": true,
-          "requires_human_review": true
+        "language": "sv",
+        "domain": "neighbour_and_property",
+        "intent": "report_possible_violation",
+        "requires_location": true,
+        "requires_human_review": true
         }
         """
 
@@ -44,8 +46,10 @@ def test_classification_uses_llm_response(
     assert result.source == ClassificationSource.LLM
     assert result.inquiry.language == "sv"
     assert result.inquiry.domain == InquiryDomain.NEIGHBOUR_AND_PROPERTY
+    assert result.inquiry.intent == InquiryIntent.REPORT_POSSIBLE_VIOLATION
     assert result.inquiry.requires_location is True
     assert result.inquiry.requires_human_review is True
+    
 
 
 def test_classification_uses_fallback_when_llm_fails(
@@ -76,4 +80,3 @@ def test_classification_uses_fallback_when_llm_fails(
 
     assert result.source == ClassificationSource.DETERMINISTIC_FALLBACK
     assert result.inquiry.domain == InquiryDomain.BUILDING_AND_PLANNING
-    
