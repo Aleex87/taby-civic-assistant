@@ -1,4 +1,6 @@
 import streamlit as st
+from pydantic import ValidationError
+from src.schemas import CitizenInquiry
 
 
 st.set_page_config(
@@ -31,11 +33,15 @@ with st.form("citizen_inquiry_form"):
     )
 
 if submitted:
-    if not citizen_inquiry.strip():
+    try:
+        inquiry = CitizenInquiry(
+            original_text=citizen_inquiry.strip(),
+        )
+    except ValidationError:
         st.warning("Please enter a citizen inquiry before continuing.")
     else:
         st.success("The inquiry was received successfully.")
 
         st.subheader("Submitted inquiry")
-        st.write(citizen_inquiry)
+        st.write(inquiry.original_text)
         
