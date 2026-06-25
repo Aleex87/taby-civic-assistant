@@ -133,7 +133,12 @@ def send_chat_message(
             OPENROUTER_CHAT_URL,
             headers=headers,
             json=payload,
-            timeout=30.0,
+            timeout=httpx.Timeout(
+                connect=5.0,
+                read=15.0,
+                write=10.0,
+                pool=5.0,
+            ),
         )
         response.raise_for_status()
     except httpx.HTTPStatusError as exc:

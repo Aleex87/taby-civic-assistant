@@ -36,6 +36,30 @@ def render_inquiry_form() -> tuple[str, bool]:
     return citizen_inquiry, submitted
 
 
+def _format_address(
+    street: str | None,
+    house_number: str | None,
+    municipality: str | None,
+) -> str:
+    """Format an address from optional components."""
+
+    address_parts = [
+        part
+        for part in (street, house_number)
+        if part
+    ]
+
+    formatted_address = " ".join(address_parts)
+
+    if municipality:
+        if formatted_address:
+            formatted_address = f"{formatted_address}, {municipality}"
+        else:
+            formatted_address = municipality
+
+    return formatted_address or "Not identified"
+
+
 def render_classification_result(
     result: InquiryClassificationResult,
 ) -> None:
@@ -86,6 +110,51 @@ def render_classification_result(
             label="Classification source",
             value=result.source.value,
         )
+
+    st.subheader("Extracted case information")
+
+    entities = result.inquiry.entities
+
+    entity_col1, entity_col2 = st.columns(2)
+
+    with entity_col1:
+        st.write("**Primary address**")
+
+        primary_address = _format_address(
+            street=entities.address.street,
+            house_number=entities.address.house_number,
+            municipality=entities.address.municipality,
+        )
+
+        st.write(primary_address)
+
+        st.write("**Subject**")
+        st.write(entities.subject or "Not identified")
+
+    with entity_col2:
+        st.write("**Neighbour related**")
+        st.write("Yes" if entities.neighbour_related else "No")
+
+        st.write("**Reported property address**")
+
+        if entities.reported_address is not None:
+            reported_address = _format_address(
+                street=entities.reported_address.street,
+                house_number=entities.reported_address.house_number,
+                municipality=entities.reported_address.municipality,
+            )
+        else:
+            reported_address = "Not identified"
+
+        st.write(reported_address)
+
+    st.write("**Missing information**")
+
+    if entities.missing_information:
+        for item in entities.missing_information:
+            st.write(f"- {item}")
+    else:
+        st.write("No missing information identified.")
 
     if result.source == ClassificationSource.LLM:
         st.info("The inquiry was classified by the language model.")
