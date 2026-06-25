@@ -7,7 +7,8 @@ from src.frontend.components import (
     render_page_header,
 )
 from src.schemas import CitizenInquiry
-from src.services.inquiry_classifier import classify_inquiry_with_llm
+from src.services.inquiry_workflow import analyze_inquiry
+
 
 
 st.set_page_config(
@@ -29,7 +30,7 @@ if submitted:
         st.warning("Please enter a citizen inquiry before continuing.")
     else:
         with st.spinner("Analyzing the inquiry..."):
-            result = classify_inquiry_with_llm(inquiry)
+            result = analyze_inquiry(inquiry)
 
         render_classification_result(result)
 
