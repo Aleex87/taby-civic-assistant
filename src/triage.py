@@ -1,4 +1,4 @@
-from src.schemas import CitizenInquiry, InquiryDomain
+from src.schemas import CitizenInquiry, InquiryDomain, InquiryIntent
 
 
 DOMAIN_KEYWORDS: dict[InquiryDomain, set[str]] = {
@@ -97,6 +97,70 @@ LOCATION_KEYWORDS: set[str] = {
     "neighbour",
     "neighbor",
 }
+INTENT_KEYWORDS: dict[InquiryIntent, set[str]] = {
+    InquiryIntent.GENERAL_INFORMATION: {
+        "what are the rules",
+        "which rules",
+        "information",
+        "guidance",
+        "regler",
+        "vilka regler",
+        "information om",
+        "hur fungerar",
+    },
+    InquiryIntent.PERMISSION_QUESTION: {
+        "can i",
+        "may i",
+        "is it allowed",
+        "do i need permission",
+        "do i need a permit",
+        "får jag",
+        "kan jag",
+        "är det tillåtet",
+        "behöver jag bygglov",
+        "krävs bygglov",
+    },
+    InquiryIntent.REPORT_POSSIBLE_VIOLATION: {
+        "not allowed",
+        "illegal",
+        "unauthorised",
+        "unauthorized",
+        "too close",
+        "built without permission",
+        "inte tillåtet",
+        "olovligt",
+        "utan bygglov",
+        "för nära",
+        "har byggt",
+    },
+    InquiryIntent.REQUEST_CONTACT: {
+        "contact",
+        "speak with",
+        "talk to",
+        "officer",
+        "kontakta",
+        "prata med",
+        "handläggare",
+        "tjänsteman",
+    },
+    InquiryIntent.CASE_STATUS: {
+        "case status",
+        "application status",
+        "status of my case",
+        "ärendestatus",
+        "status på mitt ärende",
+        "min ansökan",
+    },
+    InquiryIntent.SUBMIT_COMPLAINT: {
+        "complaint",
+        "report a problem",
+        "make a complaint",
+        "klagomål",
+        "anmäla",
+        "göra en anmälan",
+        "rapportera ett problem",
+    },
+}
 
 def classify_inquiry(inquiry: CitizenInquiry) -> CitizenInquiry:
     """Apply lightweight deterministic triage rules to an inquiry."""
@@ -119,6 +183,22 @@ def classify_inquiry(inquiry: CitizenInquiry) -> CitizenInquiry:
     if domain_scores[best_domain] == 0:
         best_domain = InquiryDomain.UNKNOWN
 
+    intent_scores = {
+        intent: sum(
+            keyword in normalized_text
+            for keyword in keywords
+        )
+        for intent, keywords in INTENT_KEYWORDS.items()
+    }
+
+    best_intent = max(
+        intent_scores,
+        key=intent_scores.get,
+    )
+
+    if intent_scores[best_intent] == 0:
+        best_intent = InquiryIntent.UNKNOWN
+
     requires_location = any(
         keyword in normalized_text
         for keyword in LOCATION_KEYWORDS
@@ -127,6 +207,7 @@ def classify_inquiry(inquiry: CitizenInquiry) -> CitizenInquiry:
     return inquiry.model_copy(
         update={
             "domain": best_domain,
+            "intent": best_intent,
             "requires_location": requires_location,
         }
     )
