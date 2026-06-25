@@ -48,7 +48,22 @@ class SourceType(StrEnum):
     DOCUMENT = "document"
     MAP_SERVICE = "map_service"
     DATASET = "dataset"
+class DetailedPlanStatus(StrEnum):
+    """Possible outcomes of a detailed-plan lookup."""
 
+    RESOLVED = "resolved"
+    MULTIPLE_MATCHES = "multiple_matches"
+    NOT_FOUND = "not_found"
+    ERROR = "error"
+
+
+class DetailedPlanType(StrEnum):
+    """Types of planning records returned by Taby map services."""
+
+    DETAILED_PLAN = "detailed_plan"
+    SUPPLEMENTARY_PLAN = "supplementary_plan"
+    PROPERTY_PLAN = "property_plan"
+    UNKNOWN = "unknown"
 
 class AddressData(BaseModel):
     """Address information extracted from a citizen inquiry."""
@@ -227,11 +242,44 @@ class RetrievalResult(BaseModel):
     requires_human_review: bool = False
     error_message: str | None = None
 
+class PlanDocument(BaseModel):
+    """Official document associated with a planning record."""
+
+    title: str | None = None
+    url: str
+    document_type: str | None = None
+
+class DetailedPlanRecord(BaseModel):
+    """One planning record applicable to a geographic point."""
+
+    plan_type: DetailedPlanType = DetailedPlanType.UNKNOWN
+    plan_number: str | None = None
+    plan_name: str | None = None
+    designation: str | None = None
+    datasource: str | None = None
+    documents: list[PlanDocument] = Field(default_factory=list)
+    additional_fields: dict[str, str | None] = Field(
+        default_factory=dict,
+    )
+
+class DetailedPlanResult(BaseModel):
+    """Planning records resolved for a coordinate or property."""
+
+    status: DetailedPlanStatus
+    query_point: GeoPoint
+    records: list[DetailedPlanRecord] = Field(default_factory=list)
+    provider: str
+    confidence: float | None = None
+    error_message: str | None = None
+
 class InquiryContext(BaseModel):
     """Complete context collected for a citizen inquiry."""
 
     analysis: InquiryClassificationResult
     primary_location: GeocodingResult | None = None
     reported_location: GeocodingResult | None = None
+    primary_detailed_plans: DetailedPlanResult | None = None
+    reported_detailed_plans: DetailedPlanResult | None = None
     retrieval: RetrievalResult | None = None
-    
+
+
