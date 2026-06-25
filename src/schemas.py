@@ -79,6 +79,28 @@ class InquiryEntities(BaseModel):
         description="Information still needed to process the inquiry.",
     )
 
+class InquiryAnalysis(BaseModel):
+    """Complete structured analysis returned by the language model."""
+
+    language: str = Field(
+        min_length=2,
+        description="Detected language code, such as sv, en, or it.",
+    )
+    domain: InquiryDomain = Field(
+        description="High-level municipal domain assigned to the inquiry.",
+    )
+    intent: InquiryIntent = Field(
+        description="Specific intent expressed by the citizen.",
+    )
+    requires_location: bool = Field(
+        description="Whether an address or geographic location is required.",
+    )
+    requires_human_review: bool = Field(
+        description="Whether the inquiry requires municipal officer review.",
+    )
+    entities: InquiryEntities = Field(
+        description="Structured entities extracted from the inquiry.",
+    )
 
 class CitizenInquiry(BaseModel):
     """Structured representation of a citizen inquiry."""
