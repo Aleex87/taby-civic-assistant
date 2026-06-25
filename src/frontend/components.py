@@ -1,6 +1,12 @@
+
 import streamlit as st
 
-from src.schemas import ClassificationSource, InquiryClassificationResult
+from src.schemas import (
+    ClassificationSource,
+    GeocodingResult,
+    InquiryClassificationResult,
+    InquiryContext,
+)
 
 
 def render_page_header() -> None:
@@ -58,6 +64,83 @@ def _format_address(
             formatted_address = municipality
 
     return formatted_address or "Not identified"
+
+
+def _render_geocoding_result(
+    title: str,
+    result: GeocodingResult | None,
+) -> None:
+    """Render one structured geocoding result."""
+
+    st.write(f"**{title}**")
+
+    if result is None:
+        st.write("No complete address was available for geocoding.")
+        return
+
+    if result.matched_address is not None:
+        matched_address = _format_address(
+            street=result.matched_address.street,
+            house_number=result.matched_address.house_number,
+            municipality=result.matched_address.municipality,
+        )
+    else:
+        matched_address = "Not identified"
+
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        st.metric(
+            label="Geocoding status",
+            value=result.status.value,
+        )
+
+    with col2:
+        confidence = (
+            f"{result.confidence:.0%}"
+            if result.confidence is not None
+            else "Unknown"
+        )
+
+        st.metric(
+            label="Confidence",
+            value=confidence,
+        )
+
+    with col3:
+        st.metric(
+            label="Provider",
+            value=result.provider,
+        )
+
+    st.write(f"**Matched address:** {matched_address}")
+
+    if result.coordinates is not None:
+        coordinates = result.coordinates
+
+        st.write(
+            f"**Coordinates:** "
+            f"{coordinates.latitude:.6f}, "
+            f"{coordinates.longitude:.6f}"
+        )
+
+        st.map(
+            [
+                {
+                    "latitude": coordinates.latitude,
+                    "longitude": coordinates.longitude,
+                }
+            ],
+            latitude="latitude",
+            longitude="longitude",
+            zoom=15,
+        )
+
+    if result.raw_label:
+        st.caption(f"Provider label: {result.raw_label}")
+
+    if result.error_message:
+        st.warning(result.error_message)
 
 
 def render_classification_result(
@@ -164,8 +247,56 @@ def render_classification_result(
             "response. The deterministic fallback was used."
         )
 
-    with st.expander("View structured case data"):
-        st.json(
-            result.model_dump(mode="json"),
+
+def render_inquiry_context(
+    context: InquiryContext,
+) -> None:
+    """Render analysis, location resolution, and official sources."""
+
+    render_classification_result(context.analysis)
+
+    st.subheader("Location resolution")
+
+    location_col1, location_col2 = st.columns(2)
+
+    with location_col1:
+        _render_geocoding_result(
+            title="Primary property",
+            result=context.primary_location,
         )
-        
+
+    with location_col2:
+        _render_geocoding_result(
+            title="Reported property",
+            result=context.reported_location,
+        )
+
+    st.subheader("Official municipal sources")
+
+    if context.retrieval is None:
+        st.info("No source retrieval was performed.")
+    elif not context.retrieval.sources:
+        st.warning(
+            "No official municipal source could be retrieved."
+        )
+
+        if context.retrieval.error_message:
+            st.caption(context.retrieval.error_message)
+    else:
+        for source in context.retrieval.sources:
+            st.markdown(f"### {source.title}")
+            st.write(source.excerpt or "No excerpt available.")
+            st.link_button(
+                "Open official source",
+                source.url,
+            )
+
+            if source.municipality:
+                st.caption(
+                    f"Municipality: {source.municipality}"
+                )
+
+    with st.expander("View complete structured context"):
+        st.json(
+            context.model_dump(mode="json"),
+        )

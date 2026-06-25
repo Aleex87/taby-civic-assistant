@@ -227,3 +227,11 @@ class RetrievalResult(BaseModel):
     requires_human_review: bool = False
     error_message: str | None = None
 
+class InquiryContext(BaseModel):
+    """Complete context collected for a citizen inquiry."""
+
+    analysis: InquiryClassificationResult
+    primary_location: GeocodingResult | None = None
+    reported_location: GeocodingResult | None = None
+    retrieval: RetrievalResult | None = None
+    

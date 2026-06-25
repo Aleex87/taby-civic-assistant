@@ -2,13 +2,12 @@ import streamlit as st
 from pydantic import ValidationError
 
 from src.frontend.components import (
-    render_classification_result,
+    render_inquiry_context,
     render_inquiry_form,
     render_page_header,
 )
 from src.schemas import CitizenInquiry
-from src.services.inquiry_analyzer import analyze_inquiry_with_llm
-
+from src.services.inquiry_context import build_inquiry_context
 
 st.set_page_config(
     page_title="Taby Civic Assistant",
@@ -29,8 +28,7 @@ if submitted:
         st.warning("Please enter a citizen inquiry before continuing.")
     else:
         with st.spinner("Analyzing the inquiry..."):
-            result = analyze_inquiry_with_llm(inquiry)
-
-        render_classification_result(result)
-
+            context = build_inquiry_context(inquiry)
         
+        render_inquiry_context(context)
+      
