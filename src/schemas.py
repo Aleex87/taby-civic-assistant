@@ -32,6 +32,24 @@ class ClassificationSource(StrEnum):
     DETERMINISTIC_FALLBACK = "deterministic_fallback"
 
 
+class GeocodingStatus(StrEnum):
+    """Possible outcomes of an address resolution attempt."""
+
+    RESOLVED = "resolved"
+    PARTIAL_MATCH = "partial_match"
+    NOT_FOUND = "not_found"
+    ERROR = "error"
+
+
+class SourceType(StrEnum):
+    """Types of official sources retrieved for an inquiry."""
+
+    WEB_PAGE = "web_page"
+    DOCUMENT = "document"
+    MAP_SERVICE = "map_service"
+    DATASET = "dataset"
+
+
 class AddressData(BaseModel):
     """Address information extracted from a citizen inquiry."""
 
@@ -47,6 +65,27 @@ class AddressData(BaseModel):
         default=None,
         description="Municipality mentioned in the inquiry.",
     )
+
+
+class GeoPoint(BaseModel):
+    """Geographic coordinates in WGS84."""
+
+    latitude: float
+    longitude: float
+
+
+class GeocodingResult(BaseModel):
+    """Structured result returned by a geocoding provider."""
+
+    query: str
+    status: GeocodingStatus
+    matched_address: AddressData | None = None
+    coordinates: GeoPoint | None = None
+    provider: str
+    confidence: float | None = None
+    external_id: str | None = None
+    raw_label: str | None = None
+    error_message: str | None = None
 
 
 class InquiryEntities(BaseModel):
@@ -79,6 +118,7 @@ class InquiryEntities(BaseModel):
         description="Information still needed to process the inquiry.",
     )
 
+
 class InquiryAnalysis(BaseModel):
     """Complete structured analysis returned by the language model."""
 
@@ -101,6 +141,7 @@ class InquiryAnalysis(BaseModel):
     entities: InquiryEntities = Field(
         description="Structured entities extracted from the inquiry.",
     )
+
 
 class CitizenInquiry(BaseModel):
     """Structured representation of a citizen inquiry."""
@@ -163,4 +204,26 @@ class InquiryClassificationResult(BaseModel):
 
     inquiry: CitizenInquiry
     source: ClassificationSource
-    
+
+
+class RetrievedSource(BaseModel):
+    """An official source retrieved for the citizen inquiry."""
+
+    title: str
+    url: str
+    source_type: SourceType = SourceType.WEB_PAGE
+    excerpt: str | None = None
+    relevance_score: float | None = None
+    municipality: str | None = None
+    published_at: str | None = None
+    retrieved_at: str | None = None
+
+
+class RetrievalResult(BaseModel):
+    """Collection of official sources retrieved for an inquiry."""
+
+    query: str
+    sources: list[RetrievedSource] = Field(default_factory=list)
+    requires_human_review: bool = False
+    error_message: str | None = None
+
