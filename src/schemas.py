@@ -32,6 +32,54 @@ class ClassificationSource(StrEnum):
     DETERMINISTIC_FALLBACK = "deterministic_fallback"
 
 
+class AddressData(BaseModel):
+    """Address information extracted from a citizen inquiry."""
+
+    street: str | None = Field(
+        default=None,
+        description="Street name extracted from the inquiry.",
+    )
+    house_number: str | None = Field(
+        default=None,
+        description="House number extracted from the inquiry.",
+    )
+    municipality: str | None = Field(
+        default=None,
+        description="Municipality mentioned in the inquiry.",
+    )
+
+
+class InquiryEntities(BaseModel):
+    """Structured entities extracted from a citizen inquiry."""
+
+    address: AddressData = Field(
+        default_factory=AddressData,
+        description="Address associated with the inquiry.",
+    )
+    subject: str | None = Field(
+        default=None,
+        description=(
+            "Main object or issue mentioned, such as garage, balcony, "
+            "waste collection, or noise."
+        ),
+    )
+    neighbour_related: bool = Field(
+        default=False,
+        description="Whether the inquiry concerns a neighbour.",
+    )
+    reported_address: AddressData | None = Field(
+        default=None,
+        description=(
+            "Address of another property involved in the inquiry, "
+            "when explicitly provided."
+        ),
+    )
+    missing_information: list[str] = Field(
+        default_factory=list,
+        description="Information still needed to process the inquiry.",
+    )
+
+
 class CitizenInquiry(BaseModel):
     """Structured representation of a citizen inquiry."""
 
@@ -50,6 +98,10 @@ class CitizenInquiry(BaseModel):
     intent: InquiryIntent = Field(
         default=InquiryIntent.UNKNOWN,
         description="Specific intent expressed by the citizen.",
+    )
+    entities: InquiryEntities = Field(
+        default_factory=InquiryEntities,
+        description="Structured entities extracted from the inquiry.",
     )
     requires_location: bool = Field(
         default=False,
