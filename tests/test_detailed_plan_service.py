@@ -6,30 +6,46 @@ from src.schemas import (
 from src.services import detailed_plan_service
 
 
+SESSION_HTML = (
+    'sessionStorage.setItem('
+    '"spatialmapSessionId", '
+    '"{11111111-1111-1111-1111-111111111111}"'
+    ");"
+)
+
+
 class FakeResponse:
     """Minimal HTTP response used by SpatialMap tests."""
 
     def __init__(
         self,
-        payload: dict,
+        payload: dict | list,
         status_code: int = 200,
+        text: str | None = None,
     ) -> None:
         self._payload = payload
         self.status_code = status_code
+        self.text = text or ""
 
     def raise_for_status(self) -> None:
         if self.status_code >= 400:
             raise RuntimeError("Simulated HTTP failure")
 
-    def json(self) -> dict:
+    def json(self):
         return self._payload
 
 
 class FakeClient:
     """Fake session preserving the SpatialMap request sequence."""
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(
+        self,
+        *args,
+        headers: dict | None = None,
+        **kwargs,
+    ) -> None:
         self.post_calls: list[dict] = []
+        self.headers = dict(headers or {})
 
     def __enter__(self):
         return self
@@ -38,14 +54,20 @@ class FakeClient:
         return None
 
     def get(self, url: str) -> FakeResponse:
-        return FakeResponse({})
+        return FakeResponse(
+            {},
+            text=SESSION_HTML,
+        )
 
     def post(
         self,
         url: str,
-        params: dict,
-        data: dict,
+        params: dict | None = None,
+        data: dict | None = None,
     ) -> FakeResponse:
+        params = params or {}
+        data = data or {}
+
         self.post_calls.append(
             {
                 "url": url,
@@ -54,7 +76,16 @@ class FakeClient:
             }
         )
 
-        page = params["page"]
+        page = params.get("page") or data.get("page")
+
+        if page == "get-profile-and-tools":
+            return FakeResponse(
+                {
+                    "profile": {
+                        "name": "csm_standard_profile",
+                    }
+                }
+            )
 
         if page == "spatialquery-is-query-pending":
             return FakeResponse(
@@ -93,13 +124,13 @@ class FakeClient:
                                 {
                                     "targetname": "Detaljplan",
                                     "status": "ready",
-                                    "rowcount": "1",
+                                    "rowcount": "2",
                                     "formattedpos": "0",
                                 },
                                 {
                                     "targetname": "Tilläggsplan",
                                     "status": "ready",
-                                    "rowcount": "1",
+                                    "rowcount": "0",
                                     "formattedpos": "1",
                                 },
                                 {
@@ -119,62 +150,73 @@ class FakeClient:
 
             if position == "0":
                 return FakeResponse(
-                    {
-                        "targetdisplayname": "Detaljplan",
-                        "datasource": (
-                            "ds_td_detaljplan_dp_plan_y_detaljplan"
-                        ),
-                        "columns": [
-                            {
-                                "label": "Plannummer",
-                                "value": "S59",
-                            },
-                            {
-                                "label": "Plannamn",
-                                "value": None,
-                            },
-                            {
-                                "label": "Beteckning",
-                                "value": "0160-S59",
-                            },
-                            {
-                                "label": "Plandokument",
-                                "value": (
-                                    "https://example.com/"
-                                    "S59-planhandlingar.pdf"
-                                ),
-                                "format": "hyperlink",
-                            },
-                        ],
-                    }
-                )
-
-            if position == "1":
-                return FakeResponse(
-                    {
-                        "targetdisplayname": "Tilläggsplan",
-                        "datasource": (
-                            "ds_td_detaljplan_dp_plan_y_tillaggsplan"
-                        ),
-                        "columns": [
-                            {
-                                "label": "Plannummer",
-                                "value": "T12",
-                            },
-                            {
-                                "label": "Beteckning",
-                                "value": "0160-T12",
-                            },
-                            {
-                                "label": "Plandokument",
-                                "value": (
-                                    "https://example.com/"
-                                    "T12-planhandlingar.pdf"
-                                ),
-                                "format": "hyperlink",
-                            },
-                        ],
-                    }
+                    [
+                        {
+                            "targetname": "Detaljplan",
+                        },
+                        {
+                            "targetdisplayname": "Detaljplan",
+                        },
+                        {
+                            "datasource": (
+                                "ds_td_detaljplan_dp_plan_y_detaljplan"
+                            ),
+                        },
+                        {
+                            "status": "ready",
+                        },
+                        {
+                            "count": 2,
+                        },
+                        {
+                            "columns": [
+                                {
+                                    "label": "Plannummer",
+                                    "value": "S59",
+                                },
+                                {
+                                    "label": "Plannamn",
+                                    "value": None,
+                                },
+                                {
+                                    "label": "Beteckning",
+                                    "value": "0160-S59",
+                                },
+                                {
+                                    "label": "Plandokument",
+                                    "value": (
+                                        "https://example.com/"
+                                        "S59-planhandlingar.pdf"
+                                    ),
+                                    "format": "hyperlink",
+                                },
+                            ],
+                        },
+                        {
+                            "columns": [
+                                {
+                                    "label": "Plannummer",
+                                    "value": "S60",
+                                },
+                                {
+                                    "label": "Plannamn",
+                                    "value": None,
+                                },
+                                {
+                                    "label": "Beteckning",
+                                    "value": "0160-S60",
+                                },
+                                {
+                                    "label": "Plandokument",
+                                    "value": (
+                                        "https://example.com/"
+                                        "S60-planhandlingar.pdf"
+                                    ),
+                                    "format": "hyperlink",
+                                },
+                            ],
+                        },
+                    ]
                 )
 
             raise AssertionError(
@@ -214,12 +256,10 @@ def test_resolve_detailed_plans_returns_all_records(
     assert first_record.designation == "0160-S59"
     assert len(first_record.documents) == 1
 
-    assert (
-        second_record.plan_type
-        == DetailedPlanType.SUPPLEMENTARY_PLAN
-    )
-    assert second_record.plan_number == "T12"
-    assert second_record.designation == "0160-T12"
+    assert second_record.plan_type == DetailedPlanType.DETAILED_PLAN
+    assert second_record.plan_number == "S60"
+    assert second_record.designation == "0160-S60"
+    assert len(second_record.documents) == 1
 
 
 def test_resolve_detailed_plans_returns_not_found(
@@ -231,9 +271,12 @@ def test_resolve_detailed_plans_returns_not_found(
         def post(
             self,
             url: str,
-            params: dict,
-            data: dict,
+            params: dict | None = None,
+            data: dict | None = None,
         ) -> FakeResponse:
+            params = params or {}
+            data = data or {}
+
             self.post_calls.append(
                 {
                     "url": url,
@@ -242,7 +285,16 @@ def test_resolve_detailed_plans_returns_not_found(
                 }
             )
 
-            page = params["page"]
+            page = params.get("page") or data.get("page")
+
+            if page == "get-profile-and-tools":
+                return FakeResponse(
+                    {
+                        "profile": {
+                            "name": "csm_standard_profile",
+                        }
+                    }
+                )
 
             if page == "spatialquery-is-query-pending":
                 return FakeResponse(
@@ -288,13 +340,13 @@ def test_resolve_detailed_plans_returns_not_found(
                                         "targetname": "Tilläggsplan",
                                         "status": "ready",
                                         "rowcount": "0",
-                                        "formattedpos": "0",
+                                        "formattedpos": "1",
                                     },
                                     {
                                         "targetname": "Fastighetsplan",
                                         "status": "ready",
                                         "rowcount": "0",
-                                        "formattedpos": "0",
+                                        "formattedpos": "2",
                                     },
                                 ]
                             }
@@ -319,3 +371,4 @@ def test_resolve_detailed_plans_returns_not_found(
 
     assert result.status == DetailedPlanStatus.NOT_FOUND
     assert result.records == []
+    
